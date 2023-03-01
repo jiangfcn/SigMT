@@ -38,7 +38,7 @@ import math
 #
 config = config.configuration()
 ## Provide project path where sites are kept
-project_path = 'D:/NGRI/FIELD RAW DATA/demo/'
+project_path = 'A:/ProgramCode/SigMT/data/'
 # #
 # #========= Selection of site and setting a path =========
 sites, selectedsite, measid, all_meas, select_meas, \
@@ -115,9 +115,31 @@ AllcohEy = data_sel.cohEy(bandavg)
 alpha_degH,alpha_degE = data_sel.pdvalues(bandavg)
 #
 #====== Coherency threshold ======
+#JF,20230117
+#precentage of small coherencies to be deleted: 
+nprecent = 0.8
+nleast = 16  #at least number of segments
+sortcohEx = np.sort(AllcohEx,axis=1)
+sortcohEy = np.sort(AllcohEy,axis=1)
+
+ncolumn = np.shape(sortcohEx)[1]
+nperiod = np.shape(sortcohEx)[0]
+if (1-nprecent)*ncolumn < nleast:
+    nprecent = 1-(nleast/ncolumn)
+if ncolumn < nleast: 
+    nprecent = 0
+
+CohThre = np.ones(nperiod)
+for icoh in range(nperiod):
+    thre_Ex = sortcohEx[icoh,int(nprecent*ncolumn)]
+    thre_Ey = sortcohEy[icoh,int(nprecent*ncolumn)]
+    CohThre[icoh] = np.amin([thre_Ex,thre_Ey])
+    if CohThre[icoh] > 0.9995: #JF
+        CohThre[icoh] = 0.9995
+
 ctflag = 0 # Give '1' to perform coherency threshold based selection
 if ctflag == 1:
-    CohThre = [0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
+    #CohThre = [0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
     for i in range(np.shape(AllcohEx)[0]):
         for j in range(np.shape(AllcohEx)[1]):
             if AllcohEx[i,j] < CohThre[i]:
@@ -130,9 +152,20 @@ if ctflag == 1:
                 cohMatrixEy[i,j] = 1
 #
 #====== Polarization direction ======
-pdflag = 0 # Give '1' to perform polarization direction based selection
-if pdflag == 1:
-    pdlim = [-10,10]
+# Degrees
+Hpdflag = 10 # Give '0' to discard polarization angles
+Epdflag = 10
+if Hpdflag == 0: # H-based
+    pdlim = [-72,-68] # discard
+    alpha = alpha_degH # Use either alpha_degE or alpha_degH
+    for i in range(np.shape(pdmat)[0]):
+        for j in range(np.shape(pdmat)[1]):
+            if alpha[i,j] > pdlim[0] and alpha[i,j] < pdlim[1]:
+                pdmat[i,j] = 0
+            else:
+                pdmat[i,j] = 1
+if Epdflag == 0: # E-based
+    pdlim = [-65,-55] # discard
     alpha = alpha_degE # Use either alpha_degE or alpha_degH
     for i in range(np.shape(pdmat)[0]):
         for j in range(np.shape(pdmat)[1]):
@@ -140,16 +173,28 @@ if pdflag == 1:
                 pdmat[i,j] = 0
             else:
                 pdmat[i,j] = 1
-#            
-pdflag = 0 # Give '1' to perform polarization direction based selection
-if pdflag == 1:
-    timewindow_limits = [0,5]
+# time-windows            
+pdflag = 10
+timewindow_limits = [150,350] # time-window discard 
+# Give '1' -Save time-windows
+# Give '0' -Discard time-windows 
+if pdflag == 0:    
     for i in range(np.shape(pdmat)[0]):
         for j in range(np.shape(pdmat)[1]):
             if j > timewindow_limits[0] and j < timewindow_limits[1]:
                 pdmat[i,j] = 0
             else:
                 pdmat[i,j] = 1
+#JF
+if pdflag == 1:    
+    for i in range(np.shape(pdmat)[0]):
+        for j in range(np.shape(pdmat)[1]):
+            if j > timewindow_limits[0] and j < timewindow_limits[1]:
+                pdmat[i,j] = 1
+            else:
+                pdmat[i,j] = 0
+#====== END Polarization direction ==========================================
+
 #
 bandavg['cohMatrixEx'] = cohMatrixEx
 bandavg['cohMatrixEy'] = cohMatrixEy

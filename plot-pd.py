@@ -78,17 +78,19 @@ for fnum in range(np.size(ftlist)):
     b = b.reshape(-1,1)
     plt.figure(num=fnum,figsize=(6,12))
     plt.subplot(411)
-    plt.scatter(b,directionH)
+    plt.scatter(b,directionH,c='b',marker='+',s=3)
     plt.ylim(-90, 90)
     plt.ylabel(r'$\alpha_H$ (deg.)')
     plt.xticks(**afont,fontsize=12)
     plt.yticks(yticks,**afont,fontsize=12)
     plt.title(procinfo.get('selectedsite') + ' - ' + procinfo.get('meas')+
               ' ('+str(procinfo.get('fs'))+' Hz) f='+ str(round(ftlist[fnum][0],2)) +' Hz')
+    plt.grid(which='both',linestyle='-.', linewidth=0.5) #JF
     plt.subplot(412)
-    plt.scatter(b,directionE)
+    plt.scatter(b,directionE,c='r',marker='x',s=3)
     plt.ylim(-90, 90)
     plt.ylabel(r'$\alpha_E$ (deg.)')
     plt.xlabel('Time window')
     plt.xticks(**afont,fontsize=12)
     plt.yticks(yticks,**afont,fontsize=12)
+    plt.grid(which='both',linestyle='-.', linewidth=0.5) #JF

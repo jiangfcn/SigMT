@@ -39,7 +39,7 @@ import time
 import math
 config = config.configuration()
 # define project path where sites are kept
-project_path = 'D:/NGRI/FIELD RAW DATA/demo/'
+project_path = 'A:/ProgramCode/SigMT/data/'
 # #
 # #========= Selection of site and setting a path =========
 sites, selectedsite, measid, all_meas, select_meas, proc_path = mtproc.makeprocpath(project_path)
@@ -64,21 +64,90 @@ del tsR['tsEy']
 del tsR['tsHz']
 tsRx = tsR.get('tsHx')
 tsRy = tsR.get('tsHy')
-Rstart = timeline[0]
-Rend = timeline[-1]
-Rstart_ind = np.where(np.equal(timelineR,Rstart))[0][0]
-Rend_ind = np.where(np.equal(timelineR,Rend))[0][0]
+#Rstart = timeline[0]
+#Rend = timeline[-1]
+#Rstart_ind = np.where(np.equal(timelineR,Rstart))[0][0]
+#Rend_ind = np.where(np.equal(timelineR,Rend))[0][0]
+#JF:
+tsEx = ts.get('tsEx')
+tsEy = ts.get('tsEy')
+tsHx = ts.get('tsHx')
+tsHy = ts.get('tsHy')
+tsHz = ts.get('tsHz')
+# Rstart = timeline[0]
+# Rend = timeline[-1]
+# Rstart_ind = np.where(np.equal(timelineR,Rstart))[0][0]
+# Rend_ind = np.where(np.equal(timelineR,Rend))[0][0]
+# tsRx = tsRx[Rstart_ind:Rend_ind+1]
+# tsRy = tsRy[Rstart_ind:Rend_ind+1]
+
+#JF:2023-02-07
+Lstart = timeline[0]
+Lend = timeline[-1]
+Rstart = timelineR[0]
+Rend = timelineR[-1]
+if Rend <= Lstart:
+    raise Exception('no overlap between Reference and local sites!')
+elif Rend > Lstart and Rend <= Lend:
+    Rclipend = Rend
+    Rclipstart = max([Lstart,Rstart])
+elif Rend > Lend:
+    Rclipend = Lend
+    Rclipstart = max([Lstart,Rstart])
+Rstart_ind = np.where(np.equal(timelineR,Rclipstart))[0][0]
+Rend_ind = np.where(np.equal(timelineR,Rclipend))[0][0]
+Lstart_ind = np.where(np.equal(timeline,Rclipstart))[0][0]
+Lend_ind = np.where(np.equal(timeline,Rclipend))[0][0]
+
 tsRx = tsRx[Rstart_ind:Rend_ind+1]
 tsRy = tsRy[Rstart_ind:Rend_ind+1]
+
+tsEx = tsEx[Lstart_ind:Lend_ind+1]
+tsEy = tsEy[Lstart_ind:Lend_ind+1]
+tsHx = tsHx[Lstart_ind:Lend_ind+1]
+tsHy = tsHy[Lstart_ind:Lend_ind+1]
+tsHz = tsHz[Lstart_ind:Lend_ind+1]
+#end of JF:2023-02-07
+
+
 del tsR['tsHx']
 del tsR['tsHy']
 tsR['tsRx'] = tsRx
-tsR['tsRy'] = tsRy 
-del timelineR, Rstart, Rend
-del Rstart_ind, Rend_ind, tsRx, tsRy
+tsR['tsRy'] = tsRy
+
+#JF, clipping ts
+ts['tsEx'] = tsEx
+ts['tsEy'] = tsEy
+ts['tsHx'] = tsHx
+ts['tsHy'] = tsHy
+ts['tsHz'] = tsHz
+# clipstart = time.strftime('%Y/%m/%d %H:%M:%S',Rclipstart[0]*24*3600)
+# clipend = time.strftime('%Y/%m/%d %H:%M:%S',Rclipend[0]*24*3600)
+# print('RR time intervel:',+ str(clipstart),'-',+str(clipend))
+#end of JF,clipping ts
+del timelineR, Rstart, Rend, Rstart_ind, Rend_ind, Lstart, Lend, Lstart_ind, Lend_ind
+del tsRx, tsRy, tsEx, tsEy, tsHx, tsHy, tsHz
+#del timelineR, Rstart, Rend
+#del Rstart_ind, Rend_ind, tsRx, tsRy
+
+
+
 #========= Decimation section ================= 
 # Keep dflag = 0 if decimation is not required
-dflag = 0
+#RR site
+print('RR: input sampling freq = ' + str(procinfoR.get('fs')) +' Hz') 
+Rdflag = 1
+if Rdflag == 1:
+    Rdecimate = [8,8,4]
+    for Rd in Rdecimate:        
+        tsR['tsRx'] = signal.decimate(tsR.get('tsRx'), Rd, n=None, ftype='iir')
+        tsR['tsRy'] = signal.decimate(tsR.get('tsRy'), Rd, n=None, ftype='iir')
+        procinfoR['fs'] = procinfoR.get('fs')/Rd
+print('RR: output sampling freq = ' + str(procinfoR.get('fs')) +' Hz') 
+#local site
+print('Local: input sampling freq = ' + str(procinfo.get('fs')) +' Hz')
+
+dflag = 1
 if dflag == 1:
     decimate = [8,8,4]
     for d in decimate:
@@ -87,14 +156,15 @@ if dflag == 1:
         ts['tsHx'] = signal.decimate(ts.get('tsHx'), d, n=None, ftype='iir')
         ts['tsHy'] = signal.decimate(ts.get('tsHy'), d, n=None, ftype='iir')
         ts['tsHz'] = signal.decimate(ts.get('tsHz'), d, n=None, ftype='iir')
-        tsR['tsRx'] = signal.decimate(tsR.get('tsRx'), d, n=None, ftype='iir')
-        tsR['tsRy'] = signal.decimate(tsR.get('tsRy'), d, n=None, ftype='iir')
         procinfo['fs'] = procinfo.get('fs')/d
+print('Local: output sampling freq = ' + str(procinfo.get('fs')) +' Hz') 
+print('decimation have done!') 
+#end of JF's edit
 #========= Decimation section end =============
 #
 # Some calculations and printing some information
 # No need to edit
-procinfo['nofs'] = len(ts['tsEx'])
+procinfo['nofs'] = len(ts['tsEx']) #number of samples
 procinfo['notch'] = 0 # Notch flag 1 - On, 0 - Off
 print('--------------------')
 #print('\nSaved time series after trend & bias removal.')
@@ -146,9 +216,32 @@ AllcohEy = data_sel.cohEy(bandavg)
 alpha_degH,alpha_degE = data_sel.pdvalues(bandavg)
 #
 #====== Coherency threshold ======
-ctflag = 0
+#JF,20230117
+#precentage of small coherencies to be deleted: 
+nprecent = 0.7
+nleast = 16  #at least number of segments
+sortcohEx = np.sort(AllcohEx,axis=1)
+sortcohEy = np.sort(AllcohEy,axis=1)
+
+ncolumn = np.shape(sortcohEx)[1]
+nperiod = np.shape(sortcohEx)[0]
+if (1-nprecent)*ncolumn < nleast:
+    nprecent = 1-(nleast/ncolumn)
+if ncolumn < nleast: 
+    nprecent = 0
+
+CohThre = np.ones(nperiod)
+for icoh in range(nperiod):
+    thre_Ex = sortcohEx[icoh,int(nprecent*ncolumn)]
+    thre_Ey = sortcohEy[icoh,int(nprecent*ncolumn)]
+    CohThre[icoh] = np.amin([thre_Ex,thre_Ey])
+    if CohThre[icoh] > 0.9995: #JF
+        CohThre[icoh] = 0.9995
+        
+        
+ctflag = 1
 if ctflag == 1:
-    CohThre = [0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
+    #CohThre = [0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
     for i in range(np.shape(AllcohEx)[0]):
         for j in range(np.shape(AllcohEx)[1]):
             if AllcohEx[i,j] < CohThre[i]:
@@ -163,7 +256,7 @@ if ctflag == 1:
 #====== Polarization direction ======
 pdflag = 0
 if pdflag == 1:
-    pdlim = [-10,10]
+    pdlim = [-65,-55]
     alpha = alpha_degE #Use either alpha_degE or alpha_degH
     for i in range(np.shape(pdmat)[0]):
         for j in range(np.shape(pdmat)[1]):
@@ -174,7 +267,7 @@ if pdflag == 1:
 #            
 pdflag = 0
 if pdflag == 1:
-    timewindow_limits = [300,400]
+    timewindow_limits = [140,350]
     for i in range(np.shape(pdmat)[0]):
         for j in range(np.shape(pdmat)[1]):
             if j > timewindow_limits[0] and j < timewindow_limits[1]:

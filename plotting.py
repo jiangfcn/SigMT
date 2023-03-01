@@ -39,8 +39,8 @@ def plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy):
     # Apparant resistivities and phase
     rho_xy = (0.2/ftlist) * ((abs(Z_huber.get('Zxy'))) ** 2)
     rho_yx = (0.2/ftlist) * ((abs(Z_huber.get('Zyx'))) ** 2)
-    phase_xy = np.degrees(np.arctan(Z_huber.get('Zxy').imag/Z_huber.get('Zxy').real))
-    phase_yx = np.degrees(np.arctan(Z_huber.get('Zyx').imag/Z_huber.get('Zyx').real))
+    phase_xy = np.degrees(np.arctan2(Z_huber.get('Zxy').imag, Z_huber.get('Zxy').real))
+    phase_yx = np.degrees(np.arctan2(Z_huber.get('Zyx').imag, Z_huber.get('Zyx').real))
     #
     #
     # Errors for app. resistivity and phase
@@ -55,6 +55,17 @@ def plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy):
     #
     # Plotting section
     # Plot App. res & Phase
+    ftlist = ftlist.reshape((-1,))
+    rho_xy = rho_xy.reshape((-1,))
+    rho_yx = rho_yx.reshape((-1,))
+    phase_xy = phase_xy.reshape((-1,))
+    phase_yx = phase_yx.reshape((-1,))
+    
+    #JF:define axis limits
+    flim = np.array([1e4,1e-4])
+    Rlim = np.array([1e1,1e5])    
+    Rticks = 10**np.arange(np.log10(Rlim[0]),np.log10(Rlim[1])+1)
+    
     plt.figure()
     plt.subplot(211)
     plt.scatter(ftlist,rho_xy,c='r',s=10,label='XY')
@@ -63,9 +74,9 @@ def plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy):
     plt.errorbar(ftlist,rho_yx,err_ryx,ecolor='b',fmt="none")
     plt.xscale('log')
     plt.yscale('log')
-    plt.xlim((10000, 0.001)) 
-    plt.ylim(0.1, 100000)
-    plt.yticks([0.1, 1, 10, 100, 1000, 10000])
+    plt.xlim(flim) 
+    plt.ylim(Rlim)
+    plt.yticks(Rticks)
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('App. Res. (Ohm.m.)')
     plt.legend()
@@ -77,9 +88,9 @@ def plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy):
     plt.errorbar(ftlist,phase_xy,err_pxy,ecolor='r',fmt="none")
     plt.errorbar(ftlist,phase_yx,err_pyx,ecolor='b',fmt="none")
     plt.xscale('log')
-    plt.xlim((10000, 0.001))
-    plt.ylim((0, 90))
-    plt.yticks([0,15,30,45,60,75,90])
+    plt.xlim(flim)
+    plt.ylim((-180, 180))
+    plt.yticks([-180,-135,-90,-45,0,45,90,135,180])
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Phase (Deg.)')
     plt.grid(which='both',linestyle='-.', linewidth=0.4)
@@ -89,7 +100,7 @@ def plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy):
     plt.scatter(ftlist,cohEx,c='r',label='Ex')
     plt.scatter(ftlist,cohEy,c='b',label='Ey')
     plt.xscale('log')
-    plt.xlim((10000, 0.001)) 
+    plt.xlim(flim) 
     plt.ylim(0, 1)
     plt.yticks([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])
     plt.xlabel('Frequency (Hz)')
@@ -108,7 +119,7 @@ def plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy):
     plt.scatter(ftlist,TyA,c='b',label='Ty')
     plt.ylim(0, 1)
     plt.xscale('log')
-    plt.xlim((10000, 0.001))
+    plt.xlim(flim)
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Tipper Amplitude')
     plt.grid(which='both',linestyle='-.', linewidth=0.4)
@@ -118,7 +129,7 @@ def plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy):
     plt.scatter(ftlist,TxP,c='r')
     plt.scatter(ftlist,TyP,c='b')
     plt.xscale('log')
-    plt.xlim((10000, 0.001))
+    plt.xlim(flim)
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Tipper Phase')
     plt.grid(which='both',linestyle='-.', linewidth=0.4)

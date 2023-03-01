@@ -42,6 +42,10 @@ def readADU07e(filename):
     with open(filename, 'rb') as f:
         header = {}
         header['length'] = np.fromfile(f, dtype=np.int16, count=1).tolist() # Header length
+        
+        if header['length'][0] < 0: #JF, Header length of CSELF TS is 33760 which is bigger than 2**16
+           header['length'] = np.array([header['length'][0] + 2**16]).tolist()
+        
         header['ver'] = np.fromfile(f, dtype=np.int16, count=1).tolist() # Header version
         header['nsamples'] = np.fromfile(f, dtype=np.int32, count=1).tolist() # Number of samples
         header['sfreq'] = np.fromfile(f, dtype=np.float32, count=1).tolist() # sampling frequency, Hz
@@ -185,7 +189,7 @@ def FFTLength(nofsamples):
     i = 1
     FFTs = [256]
     cFFT = 256 * (2 ** i)
-    term = nofsamples / (20*i);
+    term = nofsamples / (20*i)
     FFTs.append(cFFT)
     while cFFT <= term:
         i = i + 1
@@ -349,16 +353,16 @@ def bandavg(ts,procinfo,tsR,procinfoR,config):
             calHx[:,stack] = calibrateon(f,xfftHx[:,stack],ChoppDataHx,calt_Hx)
             calHy[:,stack] = calibrateon(f,xfftHy[:,stack],ChoppDataHy,calt_Hy)
             calHz[:,stack] = calibrateon(f,xfftHz[:,stack],ChoppDataHz,calt_Hz)
-            calRx[:,stack] = calibrateon(f,xfftRx[:,stack],ChoppDataHz,calt_Rx)
-            calRy[:,stack] = calibrateon(f,xfftRy[:,stack],ChoppDataHz,calt_Ry)
+            calRx[:,stack] = calibrateon(f,xfftRx[:,stack],ChoppDataRx,calt_Rx)
+            calRy[:,stack] = calibrateon(f,xfftRy[:,stack],ChoppDataRy,calt_Ry)
             f = np.delete(f,0,)        
         elif ChoppStat == 0:
             f = fqs[:,0]
             calHx[:,stack] = calibrateoff(f,xfftHx[:,stack],ChoppDataHx,calt_Hx)
             calHy[:,stack] = calibrateoff(f,xfftHy[:,stack],ChoppDataHy,calt_Hy)
             calHz[:,stack] = calibrateoff(f,xfftHz[:,stack],ChoppDataHz,calt_Hz)
-            calRx[:,stack] = calibrateon(f,xfftRx[:,stack],ChoppDataHz,calt_Rx)
-            calRy[:,stack] = calibrateon(f,xfftRy[:,stack],ChoppDataHz,calt_Ry)
+            calRx[:,stack] = calibrateon(f,xfftRx[:,stack],ChoppDataRx,calt_Rx)
+            calRy[:,stack] = calibrateon(f,xfftRy[:,stack],ChoppDataRy,calt_Ry)
             f = np.delete(f,0,)
     print("Done!")
     #
@@ -757,6 +761,13 @@ def targetfreq(fs):
                3.31855075962085E+0003,  2.47495870745984E+0003, 1.84581193639211E+0003, 
                1.37659739302252E+0003,  1.02665951233389E+0003, 7.65677575453908E+0002, 
                5.71038540538369E+0002, 4.25877713065949E+0002)
+               # JF20230109
+    elif fs == 8192:
+        ftlist = (1.37659739302252E+0003,  1.02665951233389E+0003, 7.65677575453908E+0002,
+                  5.71038540538369E+0002, 4.25877713065949E+0002, 3.17617487455902E+0002,
+                  2.36877547809548E+0002, 1.76662101025074E+0002, 1.31753719283206E+0002,
+                  9.82612707775626E+0001, 7.32827686941220E+0001, 5.46539256512696E+0001,
+                  4.07606268475239E+0001, 3.03990734646247E+0001,)
     elif fs == 4096:
         ftlist = ( 7.65677575453908E+0002, 5.71038540538369E+0002, 4.25877713065949E+0002,
                     3.17617487455902E+0002, 2.36877547809548E+0002, 1.76662101025074E+0002,
@@ -776,6 +787,27 @@ def targetfreq(fs):
                   1.69082761484340E+0001, 1.26101085422250E+0001, 9.40455644624802E+0000,
                   7.01387158203311E+0000, 5.23091066021279E+0000, 3.90118724232419E+0000,
                   2.90948610830488E+0000)
+                  # JF
+    elif fs == 256:
+        ftlist = (5.46539256512696E+0001, 4.07606268475239E+0001, 3.03990734646247E+0001,
+                  2.26714783107853E+0001, 1.69082761484340E+0001, 1.26101085422250E+0001,
+                  9.40455644624802E+0000, 7.01387158203311E+0000, 5.23091066021279E+0000,
+                  3.90118724232419E+0000, 2.90948610830488E+0000, 2.16988031811974E+0000,
+                  1.61828598580477E+0000, 1.20690966685269E+0000)
+        # JF
+    elif fs == 128:
+        ftlist = (2.26714783107853E+0001, 1.69082761484340E+0001, 1.26101085422250E+0001,
+                  9.40455644624802E+0000, 7.01387158203311E+0000, 5.23091066021279E+0000,
+                  3.90118724232419E+0000, 2.90948610830488E+0000, 2.16988031811974E+0000,
+                  1.61828598580477E+0000, 1.20690966685269E+0000, 9.00107247247826E-0001,
+                  6.71295523434523E-0001, 5.00648873965966E-0001)
+        # JF
+    elif fs == 64:
+        ftlist = (1.26101085422250E+0001, 9.40455644624802E+0000, 7.01387158203311E+0000,
+                  5.23091066021279E+0000, 3.90118724232419E+0000, 2.90948610830488E+0000,
+                  2.16988031811974E+0000, 1.61828598580477E+0000, 1.20690966685269E+0000,
+                  9.00107247247826E-0001, 6.71295523434523E-0001, 5.00648873965966E-0001,
+                  3.73381448636813E-0001, 2.78466033652964E-0001)
     # elif fs == 256:
     # elif fs == 128:
     elif fs == 32:
@@ -784,6 +816,12 @@ def targetfreq(fs):
                 1.20690966685269E+0000, 9.00107247247826E-0001, 6.71295523434523E-0001,
                 5.00648873965966E-0001, 3.73381448636813E-0001, 2.78466033652964E-0001, 
                 2.07678587625385E-0001)
+    elif fs == 16:
+        ftlist = (3.90118724232419E+0000, 2.90948610830488E+0000, 2.16988031811974E+0000, 
+                  1.61828598580477E+0000, 1.20690966685269E+0000, 9.00107247247826E-0001, 
+                  6.71295523434523E-0001, 5.00648873965966E-0001, 3.73381448636813E-0001, 
+                  2.78466033652964E-0001, 2.07678587625385E-0001, 1.54885661250254E-0001,
+                  1.15512958438456E-0001, 8.61489918401509E-0002)
     elif fs == 1:
         ftlist =  (2.076785876E-01,  1.548856612E-01,  1.155129584E-01,  8.614899184E-02,
                    6.424949109E-02, 4.791695199E-02,  3.573622528E-02,  2.665189968E-02,
@@ -807,6 +845,12 @@ def targetfreq(fs):
                    6.42494910995510E-0002, 4.79169519964988E-0002, 3.57362252889629E-0002,
                    2.66518996867085E-0002, 1.98768546808371E-0002, 1.48240596973337E-0002,
                    1.10557102438331E-0002)
+    elif fs == 1:
+        ftlist = (1.54885661250254E-0001, 1.15512958438456E-0001, 8.61489918401509E-0002,
+                  6.42494910995510E-0002, 4.79169519964988E-0002, 3.57362252889629E-0002,
+                  2.66518996867085E-0002, 1.98768546808371E-0002, 1.48240596973337E-0002,
+                  1.10557102438331E-0002, 8.24529389999566E-0003, 6.14929932115646E-0003,
+                  4.58611695347757E-0003, 3.42030329189097E-0003,)
     elif fs==0.5:
          ftlist = (1.15512958438456E-0001, 8.61489918401509E-0002, 6.42494910995510E-0002,
                    4.79169519964988E-0002, 3.57362252889629E-0002, 2.66518996867085E-0002,
@@ -819,6 +863,11 @@ def targetfreq(fs):
                    4.58611695347757E-0003, 3.42030329189097E-0003, 2.55084524166997E-0003,
                    1.90240773745913E-0003, 1.41880626092981E-0003, 1.05813867680238E-0003,
                    7.89154580281698E-0004)
+    elif fs == 0.0625: # JF
+        ftlist = (1.10557102438331E-0002, 8.24529389999566E-0003, 6.14929932115646E-0003,
+                  4.58611695347757E-0003, 3.42030329189097E-0003, 2.55084524166997E-0003,
+                  1.90240773745913E-0003, 1.41880626092981E-0003, 1.05813867680238E-0003,
+                  7.89154580281698E-0004, 5.88547574370430E-0004)
     elif fs==0.03125:
         ftlist = ( 6.14929932115646E-0003, 4.58611695347757E-0003, 3.42030329189097E-0003,
                    2.55084524166997E-0003, 1.90240773745913E-0003, 1.41880626092981E-0003,
@@ -826,6 +875,12 @@ def targetfreq(fs):
                    4.38935863710846E-0004)
                    #3.27356191481513E-0004, 2.44140625000000E-0004,
                    #2.21221629107045E-0004, 1.69779424635856E-0004)
+    elif fs == 0.015625:
+        ftlist = (4.38935863710846E-0004, 3.27356191481513E-0004, 2.44140625000000E-0004,
+                  2.21221629107045E-0004, 1.69779424635856E-0004, 1.19377664171444E-0004,
+                  0.58780160722749E-0004, 0.41246263829013E-0004, 0.28942661247168E-0004,
+                  0.20309176209047E-0004, 0.14251026703030E-0004, 0.11859710123377E-0004,
+                  0.10000000000000E-0004)
         # ftlist = ( 7.01387158203311E+0000)
     return ftlist
 
@@ -887,18 +942,22 @@ def jackknife(Z):
 
     """
     nstacks = np.shape(Z)[0]
-    for k in range(nstacks-1):
-        Zminusi = np.empty((np.shape(Z)[0],),dtype=complex)
-        Zidiff = np.empty((np.shape(Z)[0],),dtype=complex)
-        for j in range(np.shape(Z)[0]):
-            Zminusi[j] = (np.sum(Z)-Z[j])/(np.shape(Z)[0]-1)
-        for j in range(np.shape(Z)[0]):
-            Zidiff[j] = abs(Zminusi[j] - np.mean(Zminusi))
-        mean_jackknife = (np.shape(Z)[0] * np.mean(Z)) - (((np.shape(Z)[0]-1)/np.shape(Z)[0])*np.sum(Zminusi))
-        Zvar = ((np.shape(Z)[0]-1)/(np.shape(Z)[0]) * np.sum(Zidiff ** 2))
-        ind = (np.where(Zidiff == np.max(Zidiff))[0])[0]
-        Z = np.delete(Z,ind)
-        del Zminusi, Zidiff
+    if (nstacks >= 2): #JF avoid crash!
+       for k in range(nstacks-1):
+           Zminusi = np.empty((np.shape(Z)[0],), dtype=complex)
+           Zidiff = np.empty((np.shape(Z)[0],), dtype=complex)
+           for j in range(np.shape(Z)[0]):
+               Zminusi[j] = (np.sum(Z)-Z[j])/(np.shape(Z)[0]-1)
+           for j in range(np.shape(Z)[0]):
+               Zidiff[j] = abs(Zminusi[j] - np.mean(Zminusi))
+           mean_jackknife = (np.shape(Z)[0] * np.mean(Z)) - \
+               (((np.shape(Z)[0]-1)/np.shape(Z)[0])*np.sum(Zminusi))
+           Zvar = ((np.shape(Z)[0]-1)/(np.shape(Z)[0]) * np.sum(Zidiff ** 2))
+           ind = (np.where(Zidiff == np.max(Zidiff))[0])[0]
+           Z = np.delete(Z, ind)
+           del Zminusi, Zidiff
+    elif (nstacks < 2):
+        mean_jackknife = Z
     return mean_jackknife
 
 def huberEx(bandavg,Z_jackk,stacki):
